@@ -124,6 +124,9 @@ definitions:
       valid:
         type: string
         description: Displays whether loan is valid
+      countryCode:
+        type: string
+        description: Country code of originating loan request
 
   customerDetails:
     type: object

@@ -32,19 +32,19 @@ public class Application {
     //Generate initial data
     CommandLineRunner init(CustomerRepository customerRepository, LoanRepository loanRepository) {
         Customer customer = customerRepository.save(new Customer("Ivan", "Susanin", "12345", false));
-        loanRepository.save(new Loan(customer, "100", "200", true));
-        loanRepository.save(new Loan(customer, "120", "220", true));
-        loanRepository.save(new Loan(customer, "120", "220", false));
+        loanRepository.save(new Loan(customer, "100", "200", true, "LV"));
+        loanRepository.save(new Loan(customer, "120", "220", true, "LV"));
+        loanRepository.save(new Loan(customer, "120", "220", false, "SE"));
 
         customer = customerRepository.save(new Customer("Susan", "Ivanin", "12346", false));
-        loanRepository.save(new Loan(customer, "100500", "200300", false));
-        loanRepository.save(new Loan(customer, "6", "8", false));
-        loanRepository.save(new Loan(customer, "300200", "500600", false));
+        loanRepository.save(new Loan(customer, "100500", "200300", false, "NO"));
+        loanRepository.save(new Loan(customer, "6", "8", false, "ES"));
+        loanRepository.save(new Loan(customer, "300200", "500600", false, "LV"));
 
         customer = customerRepository.save(new Customer("Tamar", "Ramak", "12347", false));
 
         customer = customerRepository.save(new Customer("Valid", "User", "12348", true));
-        loanRepository.save(new Loan(customer, "100500", "200300", true));
+        loanRepository.save(new Loan(customer, "100500", "200300", true, "LX"));
 
         log.info("Initial customers and loans added to DB");
 
@@ -83,18 +83,23 @@ class LoanRestController {
     //add new loan
     @RequestMapping(method = RequestMethod.POST)
     ResponseEntity<?> postLoan(@RequestBody Map<String,String> body, HttpServletRequest request) {
-        log.info("Received /loans POST request from " + request.getRemoteAddr());
+        String ip = request.getRemoteAddr();
+        log.info("Received /loans POST request from " + ip);
         Optional<Customer> customer = customerRepository.findByPersonalId(body.get("personalId"));
 
-        HttpHeaders httpHeaders = new HttpHeaders();
+        String countryCode = getCountryByIp(ip);
+        log.info("Customer country code: " + countryCode);
+
         if (validateRequest(body, customer)) {
             log.info("Request is valid");
             //Add loan to DB
-            loanRepository.save(new Loan(customer.get(), body.get("amount"), body.get("term"), true));
+            loanRepository.save(new Loan(customer.get(), body.get("amount"), body.get("term"), true, countryCode));
+            HttpHeaders httpHeaders = new HttpHeaders();
             return new ResponseEntity<Object>("success", httpHeaders, HttpStatus.OK);
         }
         else {
             log.info("Request is invalid");
+            HttpHeaders httpHeaders = new HttpHeaders();
             return new ResponseEntity<Object>("failure", httpHeaders, HttpStatus.BAD_REQUEST);
         }
 
@@ -140,8 +145,7 @@ class LoanRestController {
         if (!customer.isPresent() || customer.get().getBlackListed()) return false;
 
         //get country
-        String countryCode = getCountryByIp("123");
-        log.info("Customer country code: " + countryCode);
+
         //verify tps
 
         return true;

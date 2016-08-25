@@ -24,16 +24,18 @@ public class Loan {
     public String amount;
     public String term;
     public Boolean valid;
+    public String countryCode;
 
     Loan() {
         //JPA only
     }
 
-    public Loan(Customer customer, String amount, String term, Boolean valid) {
+    public Loan(Customer customer, String amount, String term, Boolean valid, String countryCode) {
         this.customer = customer;
         this.amount = amount;
         this.term = term;
         this.valid = valid;
+        this.countryCode = countryCode;
     }
 
     public Customer getCustomer() {
@@ -64,4 +66,11 @@ public class Loan {
         return valid;
     }
 
+    public String getCountryCode() {
+        return countryCode;
+    }
+
+    public void setCountryCode(String countryCode) {
+        this.countryCode = countryCode;
+    }
 }
