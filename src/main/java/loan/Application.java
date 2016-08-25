@@ -17,10 +17,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.security.Principal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
+import java.util.*;
 
 /**
  * Created by jurikolo on 25.08.16.
@@ -31,19 +28,19 @@ import java.util.Iterator;
 public class Application {
     @Bean
     CommandLineRunner init(CustomerRepository customerRepository, LoanRepository loanRepository) {
-        Customer customer = customerRepository.save(new Customer("Ivan", "Susanin", "12345"));
+        Customer customer = customerRepository.save(new Customer("Ivan", "Susanin", "12345", false));
         loanRepository.save(new Loan(customer, "100", "200", true));
         loanRepository.save(new Loan(customer, "120", "220", true));
         loanRepository.save(new Loan(customer, "120", "220", false));
 
-        customer = customerRepository.save(new Customer("Susan", "Ivanin", "12346"));
+        customer = customerRepository.save(new Customer("Susan", "Ivanin", "12346", false));
         loanRepository.save(new Loan(customer, "100500", "200300", false));
         loanRepository.save(new Loan(customer, "6", "8", false));
         loanRepository.save(new Loan(customer, "300200", "500600", false));
 
-        customer = customerRepository.save(new Customer("Tamar", "Ramak", "12347"));
+        customer = customerRepository.save(new Customer("Tamar", "Ramak", "12347", false));
 
-        customer = customerRepository.save(new Customer("Valid", "User", "12348"));
+        customer = customerRepository.save(new Customer("Valid", "User", "12348", true));
         loanRepository.save(new Loan(customer, "100500", "200300", true));
         return null;
     }
@@ -62,15 +59,34 @@ class LoanRestController {
     @RequestMapping(method = RequestMethod.GET)
     ResponseEntity<?> handle() {
         HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.setLocation(URI.create("http://whateverhost:8080/loans"));
         return new ResponseEntity<Object>(this.findAllValid(), httpHeaders, HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/privateId/{privateId}", method = RequestMethod.GET)
-    ResponseEntity<?> readLoansByPrivateId(@PathVariable String privateId) {
+    @RequestMapping(value = "/personalId/{personalId}", method = RequestMethod.GET)
+    ResponseEntity<?> readLoansBypersonalId(@PathVariable String personalId) {
         HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.setLocation(URI.create("http://whateverhost:8080/loans"));
-        return new ResponseEntity<Object>(this.findAllValidByPrivateId(privateId), httpHeaders, HttpStatus.OK);
+        return new ResponseEntity<Object>(this.findAllValidBypersonalId(personalId), httpHeaders, HttpStatus.OK);
+    }
+
+    @RequestMapping(method = RequestMethod.POST)
+    ResponseEntity<?> postLoan(@RequestBody Map<String,String> body) {
+        Optional<Customer> customer = customerRepository.findByPersonalId(body.get("personalId"));
+
+        HttpHeaders httpHeaders = new HttpHeaders();
+        if (validateRequest(body, customer)) {
+            System.out.println("Request is valid");
+            //Add loan to DB
+            Loan loan = new Loan();
+            loan.setAmount(body.get("amount"));
+            loan.setTerm(body.get("term"));
+            loanRepository.save(new Loan(customer.get(), body.get("amount"), body.get("term"), true));
+            return new ResponseEntity<Object>("success", httpHeaders, HttpStatus.OK);
+        }
+        else {
+            System.out.println("Request is invalid");
+            return new ResponseEntity<Object>("failure", httpHeaders, HttpStatus.BAD_REQUEST);
+        }
+
     }
 
     Collection<Loan> findAllValid() {
@@ -84,7 +100,7 @@ class LoanRestController {
         return validLoans;
     }
 
-    Collection<Loan> findAllValidByPrivateId(String personalId) {
+    Collection<Loan> findAllValidBypersonalId(String personalId) {
         Collection<Loan> loans = loanRepository.findByCustomerPersonalId(personalId);
         Collection<Loan> validLoans = new ArrayList<>();
         for(Loan loan : loans) {
@@ -95,6 +111,28 @@ class LoanRestController {
         return validLoans;
     }
 
+    Boolean validateRequest(Map<String, String> request, Optional<Customer> customer) {
+        //verify entered parameters exists
+        System.out.println("Check amount");
+        if (null == request.get("amount")) return false;
+        System.out.println("Check term");
+        if (null == request.get("term")) return false;
+        System.out.println("Check name");
+        if (null == request.get("name")) return false;
+        System.out.println("Check surname");
+        if (null == request.get("surname")) return false;
+        System.out.println("Check personalId");
+        if (null == request.get("personalId")) return false;
+
+        //verify blacklist
+        System.out.println("Check blacklist");
+        if (!customer.isPresent() || customer.get().getBlackListed()) return false;
+
+        //verify tps
+
+        return true;
+    }
+
     @Autowired
     LoanRestController(LoanRepository loanRepository, CustomerRepository customerRepository) {
         this.customerRepository = customerRepository;
@@ -103,7 +141,7 @@ class LoanRestController {
 }
 
 @RestController
-@RequestMapping("/customer")
+@RequestMapping("/customer/{personalId}")
 class CustomerRestController {
     private final CustomerRepository customerRepository;
 
@@ -113,9 +151,9 @@ class CustomerRestController {
     }
 
     @RequestMapping(method = RequestMethod.GET)
-    ResponseEntity<?> handle() {
+    ResponseEntity<?> getCustomer(@PathVariable String personalId) {
         HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.setLocation(URI.create("http://localhost:8080/customer"));
-        return new ResponseEntity<Object>(customerRepository.findAll(), httpHeaders, HttpStatus.OK);
+        //httpHeaders.setLocation(URI.create("http://localhost:8080/customer/{personalId}"));
+        return new ResponseEntity<Object>(customerRepository.findByPersonalId(personalId).get(), httpHeaders, HttpStatus.OK);
     }
 }

@@ -24,6 +24,7 @@ public class Customer {
     public String name;
     public String surname;
     public String personalId;
+    public Boolean blackListed;
 
     public Set<Loan> getLoans() {
         return loans;
@@ -57,10 +58,15 @@ public class Customer {
         this.personalId = personalId;
     }
 
-    public Customer(String name, String surname, String personalId) {
+    public Boolean getBlackListed() {
+        return blackListed;
+    }
+
+    public Customer(String name, String surname, String personalId, Boolean blackListed) {
         this.name = name;
         this.surname = surname;
         this.personalId = personalId;
+        this.blackListed = blackListed;
     }
 
     Customer() {

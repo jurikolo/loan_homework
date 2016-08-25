@@ -44,6 +44,14 @@ public class Loan {
         return id;
     }
 
+    public void setAmount(String amount) {
+        this.amount = amount;
+    }
+
+    public void setTerm(String term) {
+        this.term = term;
+    }
+
     public String getAmount() {
         return amount;
     }
