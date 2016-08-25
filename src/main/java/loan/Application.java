@@ -15,6 +15,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.SocketException;
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by jurikolo on 25.08.16.
@@ -23,6 +25,7 @@ import java.util.*;
 @ComponentScan
 @EnableAutoConfiguration
 public class Application {
+    private final static Logger log = LoggerFactory.getLogger(Application.class);
     @Bean
     //Generate initial data
     CommandLineRunner init(CustomerRepository customerRepository, LoanRepository loanRepository) {
@@ -40,6 +43,9 @@ public class Application {
 
         customer = customerRepository.save(new Customer("Valid", "User", "12348", true));
         loanRepository.save(new Loan(customer, "100500", "200300", true));
+
+        log.info("Initial customers and loans added to DB");
+
         return null;
     }
 
@@ -51,12 +57,15 @@ public class Application {
 @RestController
 @RequestMapping("/loans")
 class LoanRestController {
+    private final static Logger log = LoggerFactory.getLogger(LoanRestController.class);
+
     private final LoanRepository loanRepository;
     private final CustomerRepository customerRepository;
 
     //return all the valid loans
     @RequestMapping(method = RequestMethod.GET)
     ResponseEntity<?> readValidLoans() {
+        log.info("Received /loans GET request");
         HttpHeaders httpHeaders = new HttpHeaders();
         return new ResponseEntity<Object>(this.findAllValid(), httpHeaders, HttpStatus.OK);
     }
@@ -64,6 +73,7 @@ class LoanRestController {
     //return all the valid loans by personalId
     @RequestMapping(value = "/personalId/{personalId}", method = RequestMethod.GET)
     ResponseEntity<?> readValidLoansBypersonalId(@PathVariable String personalId) {
+        log.info(String.format("Received /loans/personalId/%s GET request", personalId));
         HttpHeaders httpHeaders = new HttpHeaders();
         return new ResponseEntity<Object>(this.findAllValidBypersonalId(personalId), httpHeaders, HttpStatus.OK);
     }
@@ -71,17 +81,18 @@ class LoanRestController {
     //add new loan
     @RequestMapping(method = RequestMethod.POST)
     ResponseEntity<?> postLoan(@RequestBody Map<String,String> body) {
+        log.info("Received /loans POST request");
         Optional<Customer> customer = customerRepository.findByPersonalId(body.get("personalId"));
 
         HttpHeaders httpHeaders = new HttpHeaders();
         if (validateRequest(body, customer)) {
-            System.out.println("Request is valid");
+            log.info("Request is valid");
             //Add loan to DB
             loanRepository.save(new Loan(customer.get(), body.get("amount"), body.get("term"), true));
             return new ResponseEntity<Object>("success", httpHeaders, HttpStatus.OK);
         }
         else {
-            System.out.println("Request is invalid");
+            log.info("Request is invalid");
             return new ResponseEntity<Object>("failure", httpHeaders, HttpStatus.BAD_REQUEST);
         }
 
@@ -111,24 +122,24 @@ class LoanRestController {
 
     Boolean validateRequest(Map<String, String> request, Optional<Customer> customer) {
         //verify entered parameters exists
-        System.out.println("Check amount");
+        log.info("Verify amount parameter is present in a request");
         if (null == request.get("amount")) return false;
-        System.out.println("Check term");
+        log.info("Verify term parameter is present in a request");
         if (null == request.get("term")) return false;
-        System.out.println("Check name");
+        log.info("Verify name parameter is present in a request");
         if (null == request.get("name")) return false;
-        System.out.println("Check surname");
+        log.info("Verify surname parameter is present in a request");
         if (null == request.get("surname")) return false;
-        System.out.println("Check personalId");
+        log.info("Verify personalId parameter is present in a request");
         if (null == request.get("personalId")) return false;
 
         //verify blacklist
-        System.out.println("Check blacklist");
+        log.info("Verify whether customer is blacklisted");
         if (!customer.isPresent() || customer.get().getBlackListed()) return false;
 
         //get country
         String countryCode = getCountryByIp("123");
-        System.out.println("Country code = " + countryCode);
+        log.info("Customer country code: " + countryCode);
         //verify tps
 
         return true;
@@ -141,6 +152,7 @@ class LoanRestController {
         try {
             result = restTemplate.getForObject(uri, Map.class);
         } catch (Exception e) {
+            log.error("Unable to resolve country code by ip: " + e.getMessage(), e);
             return "LV";
         }
         if (result.containsKey("countryCode")) return result.get("countryCode");
