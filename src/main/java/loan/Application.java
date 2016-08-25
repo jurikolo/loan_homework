@@ -7,16 +7,13 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.hateoas.Link;
-import org.springframework.hateoas.ResourceSupport;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.client.RestTemplate;
 
-import java.net.URI;
-import java.security.Principal;
+import java.net.SocketException;
 import java.util.*;
 
 /**
@@ -27,6 +24,7 @@ import java.util.*;
 @EnableAutoConfiguration
 public class Application {
     @Bean
+    //Generate initial data
     CommandLineRunner init(CustomerRepository customerRepository, LoanRepository loanRepository) {
         Customer customer = customerRepository.save(new Customer("Ivan", "Susanin", "12345", false));
         loanRepository.save(new Loan(customer, "100", "200", true));
@@ -56,18 +54,21 @@ class LoanRestController {
     private final LoanRepository loanRepository;
     private final CustomerRepository customerRepository;
 
+    //return all the valid loans
     @RequestMapping(method = RequestMethod.GET)
-    ResponseEntity<?> handle() {
+    ResponseEntity<?> readValidLoans() {
         HttpHeaders httpHeaders = new HttpHeaders();
         return new ResponseEntity<Object>(this.findAllValid(), httpHeaders, HttpStatus.OK);
     }
 
+    //return all the valid loans by personalId
     @RequestMapping(value = "/personalId/{personalId}", method = RequestMethod.GET)
-    ResponseEntity<?> readLoansBypersonalId(@PathVariable String personalId) {
+    ResponseEntity<?> readValidLoansBypersonalId(@PathVariable String personalId) {
         HttpHeaders httpHeaders = new HttpHeaders();
         return new ResponseEntity<Object>(this.findAllValidBypersonalId(personalId), httpHeaders, HttpStatus.OK);
     }
 
+    //add new loan
     @RequestMapping(method = RequestMethod.POST)
     ResponseEntity<?> postLoan(@RequestBody Map<String,String> body) {
         Optional<Customer> customer = customerRepository.findByPersonalId(body.get("personalId"));
@@ -76,9 +77,6 @@ class LoanRestController {
         if (validateRequest(body, customer)) {
             System.out.println("Request is valid");
             //Add loan to DB
-            Loan loan = new Loan();
-            loan.setAmount(body.get("amount"));
-            loan.setTerm(body.get("term"));
             loanRepository.save(new Loan(customer.get(), body.get("amount"), body.get("term"), true));
             return new ResponseEntity<Object>("success", httpHeaders, HttpStatus.OK);
         }
@@ -128,9 +126,25 @@ class LoanRestController {
         System.out.println("Check blacklist");
         if (!customer.isPresent() || customer.get().getBlackListed()) return false;
 
+        //get country
+        String countryCode = getCountryByIp("123");
+        System.out.println("Country code = " + countryCode);
         //verify tps
 
         return true;
+    }
+
+    private String getCountryByIp(String ip) {
+        final String uri = "http://ip-api.com/json/" + ip;
+        Map<String, String> result = Collections.emptyMap();
+        RestTemplate restTemplate = new RestTemplate();
+        try {
+            result = restTemplate.getForObject(uri, Map.class);
+        } catch (Exception e) {
+            return "LV";
+        }
+        if (result.containsKey("countryCode")) return result.get("countryCode");
+        else return "LV";
     }
 
     @Autowired
