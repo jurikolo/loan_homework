@@ -100,7 +100,6 @@ class LoanRestController {
         this.customerRepository = customerRepository;
         this.loanRepository = loanRepository;
     }
-
 }
 
 @RestController
@@ -118,13 +117,5 @@ class CustomerRestController {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setLocation(URI.create("http://localhost:8080/customer"));
         return new ResponseEntity<Object>(customerRepository.findAll(), httpHeaders, HttpStatus.OK);
-    }
-}
-
-@ResponseStatus(HttpStatus.NOT_FOUND)
-class PersonalIdNotFoundException extends RuntimeException {
-
-    public PersonalIdNotFoundException(String personalId) {
-        super("could not find user '" + personalId + "'.");
     }
 }
