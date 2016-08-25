@@ -60,22 +60,32 @@ class LoanRestController {
     private final CustomerRepository customerRepository;
 
     @RequestMapping(method = RequestMethod.GET)
-//    Collection<Loan> readLoans() {
-//        return this.loanRepository.findAll();
-//    }
     ResponseEntity<?> handle() {
         HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.setLocation(URI.create("http://localhost:8080/loans"));
+        httpHeaders.setLocation(URI.create("http://whateverhost:8080/loans"));
         return new ResponseEntity<Object>(this.findAllValid(), httpHeaders, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/privateId/{privateId}", method = RequestMethod.GET)
-    Collection<Loan> readLoansByPrivateId(@PathVariable String privateId) {
-        return loanRepository.findByCustomerPersonalId(privateId);
+    ResponseEntity<?> readLoansByPrivateId(@PathVariable String privateId) {
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setLocation(URI.create("http://whateverhost:8080/loans"));
+        return new ResponseEntity<Object>(this.findAllValidByPrivateId(privateId), httpHeaders, HttpStatus.OK);
     }
 
     Collection<Loan> findAllValid() {
         Collection<Loan> loans = loanRepository.findAll();
+        Collection<Loan> validLoans = new ArrayList<>();
+        for(Loan loan : loans) {
+            if (loan.getValid()) {
+                validLoans.add(loan);
+            }
+        }
+        return validLoans;
+    }
+
+    Collection<Loan> findAllValidByPrivateId(String personalId) {
+        Collection<Loan> loans = loanRepository.findByCustomerPersonalId(personalId);
         Collection<Loan> validLoans = new ArrayList<>();
         for(Loan loan : loans) {
             if (loan.getValid()) {
@@ -109,7 +119,6 @@ class CustomerRestController {
         httpHeaders.setLocation(URI.create("http://localhost:8080/customer"));
         return new ResponseEntity<Object>(customerRepository.findAll(), httpHeaders, HttpStatus.OK);
     }
-
 }
 
 @ResponseStatus(HttpStatus.NOT_FOUND)
