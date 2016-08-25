@@ -18,6 +18,8 @@ import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.http.HttpServletRequest;
+
 /**
  * Created by jurikolo on 25.08.16.
  */
@@ -80,8 +82,8 @@ class LoanRestController {
 
     //add new loan
     @RequestMapping(method = RequestMethod.POST)
-    ResponseEntity<?> postLoan(@RequestBody Map<String,String> body) {
-        log.info("Received /loans POST request");
+    ResponseEntity<?> postLoan(@RequestBody Map<String,String> body, HttpServletRequest request) {
+        log.info("Received /loans POST request from " + request.getRemoteAddr());
         Optional<Customer> customer = customerRepository.findByPersonalId(body.get("personalId"));
 
         HttpHeaders httpHeaders = new HttpHeaders();
