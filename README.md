@@ -1,2 +1,2 @@
 # loan_homework
-There is no description, actually
+See doc/api.yaml for API description
