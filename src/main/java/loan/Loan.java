@@ -1,5 +1,7 @@
 package loan;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -11,6 +13,7 @@ import javax.persistence.ManyToOne;
 @Entity
 public class Loan {
 
+    @JsonIgnore
     @ManyToOne
     private Customer customer;
 
@@ -31,27 +34,20 @@ public class Loan {
         this.term = term;
     }
 
-    public Long getId() {
-        return id;
+    public Customer getCustomer() {
+        return customer;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public Long getId() {
+        return id;
     }
 
     public String getAmount() {
         return amount;
     }
 
-    public void setAmount(String amount) {
-        this.amount = amount;
-    }
-
     public String getTerm() {
         return term;
     }
 
-    public void setTerm(String term) {
-        this.term = term;
-    }
 }
