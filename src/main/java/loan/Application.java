@@ -1,5 +1,7 @@
 package loan;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -13,8 +15,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
-import java.net.SocketException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +67,12 @@ class LoanRestController {
 
     private final LoanRepository loanRepository;
     private final CustomerRepository customerRepository;
+    private static final AtomicLong cnt = new AtomicLong();
+    private static final int cntLimit = 2;
+    private static final long timeLimit = 10;
+    private static final Cache<String, Integer> limitMap = CacheBuilder.newBuilder()
+            .expireAfterWrite(timeLimit, TimeUnit.SECONDS)
+            .build();
 
     //return all the valid loans
     @RequestMapping(method = RequestMethod.GET)
@@ -89,6 +99,18 @@ class LoanRestController {
 
         String countryCode = getCountryByIp(ip);
         log.info("Customer country code: " + countryCode);
+
+        if (limitMap.asMap().containsKey(countryCode)) {
+            if (limitMap.asMap().get(countryCode) > cntLimit) {
+                HttpHeaders httpHeaders = new HttpHeaders();
+                return new ResponseEntity<Object>("Amount of loans hit the limit for your country, please try again later", httpHeaders, HttpStatus.BAD_REQUEST);
+            } else {
+                limitMap.asMap().put(countryCode, limitMap.asMap().get(countryCode) + 1);
+            }
+        } else {
+            limitMap.asMap().put(countryCode, 1);
+        }
+
 
         if (validateRequest(body, customer)) {
             log.info("Request is valid");
@@ -143,8 +165,6 @@ class LoanRestController {
         //verify blacklist
         log.info("Verify whether customer is blacklisted");
         if (!customer.isPresent() || customer.get().getBlackListed()) return false;
-
-        //get country
 
         //verify tps
 
