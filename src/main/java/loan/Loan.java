@@ -23,15 +23,17 @@ public class Loan {
 
     public String amount;
     public String term;
+    public Boolean valid;
 
     Loan() {
         //JPA only
     }
 
-    public Loan(Customer customer, String amount, String term) {
+    public Loan(Customer customer, String amount, String term, Boolean valid) {
         this.customer = customer;
         this.amount = amount;
         this.term = term;
+        this.valid = valid;
     }
 
     public Customer getCustomer() {
@@ -48,6 +50,10 @@ public class Loan {
 
     public String getTerm() {
         return term;
+    }
+
+    public Boolean getValid() {
+        return valid;
     }
 
 }

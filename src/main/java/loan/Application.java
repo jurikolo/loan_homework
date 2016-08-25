@@ -17,6 +17,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -31,15 +32,19 @@ public class Application {
     @Bean
     CommandLineRunner init(CustomerRepository customerRepository, LoanRepository loanRepository) {
         Customer customer = customerRepository.save(new Customer("Ivan", "Susanin", "12345"));
-        loanRepository.save(new Loan(customer, "100", "200"));
-        loanRepository.save(new Loan(customer, "120", "220"));
+        loanRepository.save(new Loan(customer, "100", "200", true));
+        loanRepository.save(new Loan(customer, "120", "220", true));
+        loanRepository.save(new Loan(customer, "120", "220", false));
 
         customer = customerRepository.save(new Customer("Susan", "Ivanin", "12346"));
-        loanRepository.save(new Loan(customer, "100500", "200300"));
-        loanRepository.save(new Loan(customer, "300200", "500600"));
+        loanRepository.save(new Loan(customer, "100500", "200300", false));
+        loanRepository.save(new Loan(customer, "6", "8", false));
+        loanRepository.save(new Loan(customer, "300200", "500600", false));
 
         customer = customerRepository.save(new Customer("Tamar", "Ramak", "12347"));
 
+        customer = customerRepository.save(new Customer("Valid", "User", "12348"));
+        loanRepository.save(new Loan(customer, "100500", "200300", true));
         return null;
     }
 
@@ -61,12 +66,23 @@ class LoanRestController {
     ResponseEntity<?> handle() {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setLocation(URI.create("http://localhost:8080/loans"));
-        return new ResponseEntity<Object>(loanRepository.findAll(), httpHeaders, HttpStatus.OK);
+        return new ResponseEntity<Object>(this.findAllValid(), httpHeaders, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/privateId/{privateId}", method = RequestMethod.GET)
     Collection<Loan> readLoansByPrivateId(@PathVariable String privateId) {
         return loanRepository.findByCustomerPersonalId(privateId);
+    }
+
+    Collection<Loan> findAllValid() {
+        Collection<Loan> loans = loanRepository.findAll();
+        Collection<Loan> validLoans = new ArrayList<>();
+        for(Loan loan : loans) {
+            if (loan.getValid()) {
+                validLoans.add(loan);
+            }
+        }
+        return validLoans;
     }
 
     @Autowired
