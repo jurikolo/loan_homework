@@ -1,0 +1,162 @@
+swagger: "2.0"
+info:
+  version: 1.0.0
+  title: Loan_Homework
+  description: Webservice provides possibility to fetch loan data or submit a loan request
+host: localhost:8080
+schemes:
+  - http
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /loans:
+    post:
+      summary: Submit a loan request
+      description: N/A
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/loanRequest"
+      responses:
+        200:
+          description: Success
+        default:
+          description: unexpected error
+          schema:
+            $ref: "#/definitions/error"
+    get:
+      summary: Return all the valid loans
+      description: N/A
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/loans"
+        default:
+          description: unexpected error
+          schema:
+            $ref: "#/definitions/error"
+
+  /loans/personalId/{personalId}:
+    get:
+      summary: Return valid loans for particular customer
+      description: N/A
+      parameters:
+        - name: personalId
+          in: path
+          required: true
+          type: string
+          description: Customer personal id
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/loans"
+        default:
+          description: unexpected error
+          schema:
+            $ref: "#/definitions/error"
+
+  /customer/{personalId}:
+    get:
+      summary: Return customer data and loan information
+      description: N/A
+      parameters:
+        - name: personalId
+          in: path
+          required: true
+          type: string
+          description: Customer personal id
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/customerDetails"
+        default:
+          description: unexpected error
+          schema:
+            $ref: "#/definitions/error"
+
+definitions:
+  loanRequest:
+    type: object
+    description: Loan request body object
+    properties:
+      amount:
+        type: string
+        description: Amount of money to loan
+      term:
+        type: string
+        description: Term of a loan
+      name:
+        type: string
+        description: Customer name
+      surname:
+        type: string
+        description: Customer surname
+      personalId:
+        type: string
+        description: Customer personal ID
+
+  loans:
+    type: array
+    description: A list of valid loans
+    items:
+      $ref: "#/definitions/loan"
+
+  loan:
+    type: object
+    description: Loan object
+    properties:
+      id:
+        type: string
+        description: Loan id
+      amount:
+        type: string
+        description: Amount of money to loan
+      term:
+        type: string
+        description: Term of a loan
+      valid:
+        type: string
+        description: Displays whether loan is valid
+
+  customerDetails:
+    type: object
+    description: customer data and loan information
+    properties:
+      loans:
+        type: array
+        description: A list of valid loans
+        items:
+          $ref: "#/definitions/loan"
+      id:
+        type: string
+        description: Customer id
+      name:
+        type: string
+        description: Customer name
+      surname:
+        type: string
+        description: Customer surname
+      personalId:
+        type: string
+        description: Customer personal ID
+      blackListed:
+        type: string
+        description: Whether customer is blacklisted or not
+
+  error:
+    required:
+      - code
+      - message
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
