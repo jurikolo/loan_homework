@@ -1,5 +1,6 @@
 package loan.controller;
 
+import loan.Customer;
 import loan.CustomerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -9,6 +10,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.NoSuchElementException;
 
 /**
  * Created by jurikolo on 26.08.16.
@@ -26,6 +29,12 @@ class CustomerRestController {
     @RequestMapping(method = RequestMethod.GET)
     ResponseEntity<?> getCustomer(@PathVariable String personalId) {
         HttpHeaders httpHeaders = new HttpHeaders();
-        return new ResponseEntity<Object>(customerRepository.findByPersonalId(personalId).get(), httpHeaders, HttpStatus.OK);
+        Customer customer;
+        try {
+            customer = customerRepository.findByPersonalId(personalId).get();
+        } catch (NoSuchElementException e) {
+            return new ResponseEntity<String>("Customer not found", httpHeaders, HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<Object>(customer, httpHeaders, HttpStatus.OK);
     }
 }
