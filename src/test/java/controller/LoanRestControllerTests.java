@@ -1,11 +1,5 @@
 package controller;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import loan.*;
 import org.junit.Assert;
 import org.junit.Before;
@@ -21,13 +15,15 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.context.WebApplicationContext;
-import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
-import static org.hamcrest.Matchers.is;
 
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
 /**
  * Created by jurikolo on 26.08.16.
@@ -36,7 +32,7 @@ import java.util.List;
 @SpringBootConfiguration()
 @WebAppConfiguration
 @ContextConfiguration(classes = Application.class)
-public class CustomerRestControllerTests {
+public class LoanRestControllerTests {
     private MediaType contentType = new MediaType(MediaType.APPLICATION_JSON.getType(),
             MediaType.APPLICATION_JSON.getSubtype(),
             Charset.forName("utf8"));
@@ -75,41 +71,56 @@ public class CustomerRestControllerTests {
         this.loanRepository.deleteAllInBatch();
         this.customerRepository.deleteAllInBatch();
 
-        this.customer = customerRepository.save(new Customer("Ivan", "Susanin", "12345", false));
+        customerRepository.save(new Customer("Ivan", "Susanin", "12345", false));
         this.loanList.add(loanRepository.save(new Loan(customer, "100", "200", true, "LV")));
         this.loanList.add(loanRepository.save(new Loan(customer, "120", "220", true, "LV")));
         this.loanList.add(loanRepository.save(new Loan(customer, "120", "220", false, "SE")));
 
-        customer = customerRepository.save(new Customer("Valid", "User", "12348", true));
+        customerRepository.save(new Customer("Valid", "User", "12348", true));
         loanRepository.save(new Loan(customer, "100500", "200300", true, "LX"));
     }
 
     @Test
     public void noParamRequestShouldFail() throws Exception {
-        this.mockMvc.perform(get("/customer/")).andDo(print()).andExpect(status().is4xxClientError());
+        this.mockMvc.perform(get("/loans/")).andDo(print())
+                .andExpect(status().is2xxSuccessful());
     }
 
     @Test
-    public void NonExistingPersonalIdRequestShouldFail() throws Exception {
-        this.mockMvc.perform(get("/customer/" + this.unknownPersonalId))
-                .andExpect(status().is4xxClientError())
-                .andExpect(content().string("Customer not found"));
-
+    public void WhiteListedCustomerRequestShouldSucceed() throws Exception {
+        this.mockMvc.perform(get("/loans/personalId/" + whiteListedPersonalId)).andDo(print())
+                .andExpect(status().is2xxSuccessful());
     }
 
     @Test
-    public void BlackListedPersonalIdRequestShouldSucceed() throws Exception {
-        this.mockMvc.perform(get("/customer/" + this.blackListedPersonalId))
-                .andExpect(status().is2xxSuccessful())
-                .andExpect(jsonPath("$.blackListed", is(true)));
-
+    public void BlackListedCustomerRequestShouldSucceed() throws Exception {
+        this.mockMvc.perform(get("/loans/personalId/" + blackListedPersonalId)).andDo(print())
+                .andExpect(status().is2xxSuccessful());
     }
 
     @Test
-    public void WhiteListedPersonalIdRequestShouldSucceed() throws Exception {
-        this.mockMvc.perform(get("/customer/" + this.whiteListedPersonalId))
-                .andExpect(status().is2xxSuccessful())
-                .andExpect(jsonPath("$.blackListed", is(false)));
+    public void UnknownCustomerRequestShouldSucceed() throws Exception {
+        this.mockMvc.perform(get("/loans/personalId/" + unknownPersonalId)).andDo(print())
+                .andExpect(status().is2xxSuccessful());
+    }
 
+    @Test
+    public void noParamCustomerRequestShouldFail() throws Exception {
+        this.mockMvc.perform(get("/loans/personalId")).andDo(print()).andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    public void requestLoanByUnknownCustomer() throws Exception {
+        this.mockMvc.perform(post("/loans").contentType(contentType).content(String.format("{ \"amount\" : \"600\", \"term\" : \"24\", \"personalId\" : \"%s\", \"name\" : \"Ivan\", \"surname\" : \"Susanin\" }", unknownPersonalId))).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void requestLoanByBlackListedCustomer() throws Exception {
+        this.mockMvc.perform(post("/loans").contentType(contentType).content(String.format("{ \"amount\" : \"600\", \"term\" : \"24\", \"personalId\" : \"%s\", \"name\" : \"Ivan\", \"surname\" : \"Susanin\" }", blackListedPersonalId))).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void requestLoanByWhiteListedCustomer() throws Exception {
+        this.mockMvc.perform(post("/loans").contentType(contentType).content(String.format("{ \"amount\" : \"600\", \"term\" : \"24\", \"personalId\" : \"%s\", \"name\" : \"Ivan\", \"surname\" : \"Susanin\" }", whiteListedPersonalId))).andExpect(status().isCreated());
     }
 }
