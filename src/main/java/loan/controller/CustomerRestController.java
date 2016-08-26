@@ -1,7 +1,7 @@
 package loan.controller;
 
-import loan.Customer;
-import loan.CustomerRepository;
+import loan.model.Customer;
+import loan.dao.CustomerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;

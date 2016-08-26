@@ -1,11 +1,9 @@
 package loan.controller;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import loan.Customer;
-import loan.CustomerRepository;
-import loan.Loan;
-import loan.LoanRepository;
+import loan.model.Customer;
+import loan.dao.CustomerRepository;
+import loan.model.Loan;
+import loan.dao.LoanRepository;
 import loan.service.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,11 +12,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**

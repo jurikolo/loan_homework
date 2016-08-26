@@ -1,5 +1,6 @@
-package loan;
+package loan.dao;
 
+import loan.model.Customer;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 

@@ -2,7 +2,7 @@ package loan.service;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import loan.Customer;
+import loan.model.Customer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;

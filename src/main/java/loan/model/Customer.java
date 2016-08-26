@@ -1,4 +1,6 @@
-package loan;
+package loan.model;
+
+import loan.model.Loan;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
