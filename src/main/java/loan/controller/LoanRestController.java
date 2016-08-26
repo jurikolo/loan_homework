@@ -64,7 +64,7 @@ class LoanRestController {
             //Add loan to DB
             loanRepository.save(new Loan(customer.get(), body.get("amount"), body.get("term"), true, countryCode));
             HttpHeaders httpHeaders = new HttpHeaders();
-            return new ResponseEntity<Object>("success", httpHeaders, HttpStatus.OK);
+            return new ResponseEntity<Object>("success", httpHeaders, HttpStatus.CREATED);
         }
         else {
             log.info("Request is invalid");
