@@ -6,6 +6,7 @@ import loan.Customer;
 import loan.CustomerRepository;
 import loan.Loan;
 import loan.LoanRepository;
+import loan.service.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,11 +32,6 @@ class LoanRestController {
     private final LoanRepository loanRepository;
     private final CustomerRepository customerRepository;
     private static final AtomicLong cnt = new AtomicLong();
-    private static final int cntLimit = 2;
-    private static final long timeLimit = 10;
-    private static final Cache<String, Integer> limitMap = CacheBuilder.newBuilder()
-            .expireAfterWrite(timeLimit, TimeUnit.SECONDS)
-            .build();
 
     //return all the valid loans
     @RequestMapping(method = RequestMethod.GET)
@@ -60,10 +56,10 @@ class LoanRestController {
         log.info("Received /loans POST request from " + ip);
         Optional<Customer> customer = customerRepository.findByPersonalId(body.get("personalId"));
 
-        String countryCode = getCountryByIp(ip);
+        String countryCode = Service.getCountryByIp(ip);
         log.info("Customer country code: " + countryCode);
 
-        if (validateRequest(body, customer, countryCode)) {
+        if (Service.validateRequest(body, customer, countryCode)) {
             log.info("Request is valid");
             //Add loan to DB
             loanRepository.save(new Loan(customer.get(), body.get("amount"), body.get("term"), true, countryCode));
@@ -97,51 +93,6 @@ class LoanRestController {
             }
         }
         return validLoans;
-    }
-
-    Boolean validateRequest(Map<String, String> request, Optional<Customer> customer, String countryCode) {
-        //verify entered parameters exists
-        log.info("Verify amount parameter is present in a request");
-        if (null == request.get("amount")) return false;
-        log.info("Verify term parameter is present in a request");
-        if (null == request.get("term")) return false;
-        log.info("Verify name parameter is present in a request");
-        if (null == request.get("name")) return false;
-        log.info("Verify surname parameter is present in a request");
-        if (null == request.get("surname")) return false;
-        log.info("Verify personalId parameter is present in a request");
-        if (null == request.get("personalId")) return false;
-
-        //verify blacklist
-        log.info("Verify whether customer is blacklisted");
-        if (!customer.isPresent() || customer.get().getBlackListed()) return false;
-
-        //verify tps
-        if (limitMap.asMap().containsKey(countryCode)) {
-            if (limitMap.asMap().get(countryCode) > cntLimit) {
-                HttpHeaders httpHeaders = new HttpHeaders();
-                return false;
-            } else {
-                limitMap.asMap().put(countryCode, limitMap.asMap().get(countryCode) + 1);
-            }
-        } else {
-            limitMap.asMap().put(countryCode, 1);
-        }
-        return true;
-    }
-
-    private String getCountryByIp(String ip) {
-        final String uri = "http://ip-api.com/json/" + ip;
-        Map<String, String> result = Collections.emptyMap();
-        RestTemplate restTemplate = new RestTemplate();
-        try {
-            result = restTemplate.getForObject(uri, Map.class);
-        } catch (Exception e) {
-            log.error("Unable to resolve country code by ip: " + e.getMessage(), e);
-            return "LV";
-        }
-        if (result.containsKey("countryCode")) return result.get("countryCode");
-        else return "LV";
     }
 
     @Autowired
