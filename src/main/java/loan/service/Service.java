@@ -18,7 +18,10 @@ import java.util.concurrent.TimeUnit;
  */
 public class Service {
     private final static Logger log = LoggerFactory.getLogger(Service.class);
+
+    //limit of loan requests per country per timeLimit
     private static final int cntLimit = 2;
+
     private static final long timeLimit = 10;
     private static final Cache<String, Integer> limitMap = CacheBuilder.newBuilder()
             .expireAfterWrite(timeLimit, TimeUnit.SECONDS)
@@ -43,7 +46,7 @@ public class Service {
 
         //verify tps
         if (limitMap.asMap().containsKey(countryCode)) {
-            if (limitMap.asMap().get(countryCode) > cntLimit) {
+            if (limitMap.asMap().get(countryCode) >= cntLimit) {
                 HttpHeaders httpHeaders = new HttpHeaders();
                 return false;
             } else {
